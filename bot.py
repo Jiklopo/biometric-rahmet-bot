@@ -10,7 +10,7 @@ API_TOKEN = os.getenv('TOKEN')
 
 # webhook settings
 WEBHOOK_HOST = os.getenv('WEBHOOK_HOST')
-WEBHOOK_PATH = '/path/to/api'
+WEBHOOK_PATH = 'path/to/api'
 WEBHOOK_URL = f"{WEBHOOK_HOST}{WEBHOOK_PATH}"
 
 # webserver settings
