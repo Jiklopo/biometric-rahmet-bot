@@ -8,10 +8,7 @@ from aiogram.utils.executor import start_webhook
 
 API_TOKEN = os.getenv('TOKEN')
 
-# webhook settings
-WEBHOOK_HOST = os.getenv('WEBHOOK_HOST')
-WEBHOOK_PATH = 'path/to/api'
-WEBHOOK_URL = f"{WEBHOOK_HOST}{WEBHOOK_PATH}"
+WEBHOOK_URL = os.getenv('WEBHOOK_URL')
 
 # webserver settings
 WEBAPP_HOST = '0.0.0.0'  # or ip
