@@ -1,41 +1,39 @@
 import os
-import asyncio
-import logging
+from urllib.parse import urljoin
 
-from aiogram import Bot, types
-from aiogram.dispatcher import Dispatcher
-from aiogram.utils.executor import start_webhook
+from aiohttp import web
+from aiogram import Bot, Dispatcher, types
+from aiogram.dispatcher.webhook import get_new_configured_app
 
-API_TOKEN = os.getenv('TOKEN')
+TOKEN = os.getenv('TOKEN', '')  # Press "Reveal Config Vars" in settings tab on Heroku and set TOKEN variable
+PROJECT_NAME = os.getenv('PROJECT_NAME', 'aiogram-example')  # Set it as you've set TOKEN env var
 
-WEBHOOK_URL = os.getenv('WEBHOOK_URL')
+WEBHOOK_HOST = f'https://{PROJECT_NAME}.herokuapp.com/'  # Enter here your link from Heroku project settings
+WEBHOOK_URL_PATH = '/webhook/' + TOKEN
+WEBHOOK_URL = urljoin(WEBHOOK_HOST, WEBHOOK_URL_PATH)
 
-# webserver settings
-WEBAPP_HOST = '0.0.0.0'  # or ip
-WEBAPP_PORT = os.getenv('PORT')
+# Inline keyboard initialization with one refresh button
+inline_keyboard = types.InlineKeyboardMarkup()
+random_button = types.InlineKeyboardButton('Получить случайную цитату', callback_data='refresh')
+inline_keyboard.add(random_button)
 
-logging.basicConfig(level=logging.INFO)
-
-loop = asyncio.get_event_loop()
-bot = Bot(token=API_TOKEN, loop=loop)
+bot = Bot(TOKEN)
 dp = Dispatcher(bot)
 
 
-@dp.message_handler()
-async def echo(message: types.Message):
-    await bot.send_message(message.chat.id, message.text)
+@dp.message_handler(func=lambda cb: True)
+async def start(message: types.Message):
+    await message.reply(message.text)
 
 
-async def on_startup(dp):
+async def on_startup(app):
+    """Simple hook for aiohttp application which manages webhook"""
+    await bot.delete_webhook()
     await bot.set_webhook(WEBHOOK_URL)
-    # insert code here to run it after start
-
-
-async def on_shutdown(dp):
-    # insert code here to run it before shutdown
-    pass
 
 
 if __name__ == '__main__':
-    start_webhook(dispatcher=dp, webhook_path=WEBHOOK_PATH, on_startup=on_startup, on_shutdown=on_shutdown,
-                  skip_updates=True, host=WEBAPP_HOST, port=WEBAPP_PORT)
+    # Create aiohttp.web.Application with configured route for webhook path
+    app = get_new_configured_app(dispatcher=dp, path=WEBHOOK_URL_PATH)
+    app.on_startup.append(on_startup)
+    web.run_app(app, host='0.0.0.0', port=os.getenv('PORT'))  # Heroku stores port you have to listen in your app
