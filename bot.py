@@ -1,6 +1,7 @@
 import os
 from urllib.parse import urljoin
 
+from aiogram.types import ContentType
 from aiohttp import web
 from aiogram import Bot, Dispatcher, types
 from aiogram.dispatcher.webhook import get_new_configured_app
@@ -21,7 +22,7 @@ bot = Bot(TOKEN)
 dp = Dispatcher(bot)
 
 
-@dp.message_handler(func=lambda cb: True)
+@dp.message_handler(content_types=[ContentType.TEXT])
 async def start(message: types.Message):
     await message.reply(message.text)
 
