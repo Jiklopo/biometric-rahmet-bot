@@ -34,3 +34,13 @@ def finish_order(*, order: Order) -> Order:
         session.refresh(instance=order)
 
     return order
+
+
+def append_text_to_order(*, order: Order, text: str) -> Order:
+    with Session(engine) as session:
+        session.add(order)
+        order.text += text
+        session.commit()
+        session.refresh(instance=order)
+
+    return order
