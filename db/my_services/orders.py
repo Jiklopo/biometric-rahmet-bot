@@ -16,9 +16,11 @@ def create_order(*, user_id) -> Order:
 
 def add_order_product(*, order: Order, product: Product) -> Order:
     with Session(engine) as session:
-        order.products.append(product)
+        session.add(product)
         session.add(order)
+        order.products.append(product)
         session.commit()
         session.refresh(instance=order)
+        session.refresh(instance=product)
 
     return order
