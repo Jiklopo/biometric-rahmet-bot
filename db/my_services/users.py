@@ -4,14 +4,13 @@ from db import engine
 from db.tables import User
 
 
-def create_user(*, telegram_id, username='', name='', kaspi='') -> User:
+def create_user(*, telegram_id, username=None, name=None, kaspi=None) -> User:
     with Session(engine) as session:
         user = User(
             telegram_id=telegram_id,
             username=username,
             name=name,
-            kaspi=kaspi,
-            state='UNNAMED'
+            kaspi=kaspi
         )
         session.add(user)
         session.commit()

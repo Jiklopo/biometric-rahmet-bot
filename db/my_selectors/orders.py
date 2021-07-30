@@ -16,3 +16,11 @@ def get_user_orders(*, user_id) -> list[Order]:
         orders = session.query(Order).filter(Order.user_id == user_id).all()
 
     return orders
+
+
+def get_active_user_order(*, user_id) -> Order:
+    with Session(engine) as session:
+        orders = session.query(Order).filter(Order.user_id == user_id, Order.is_finished == False).all()
+        order = orders.pop()
+
+    return order

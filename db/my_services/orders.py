@@ -24,3 +24,23 @@ def add_order_product(*, order: Order, product: Product) -> Order:
         session.refresh(instance=product)
 
     return order
+
+
+def finish_order(*, order: Order) -> Order:
+    with Session(engine) as session:
+        session.add(order)
+        order.is_finished = True
+        session.commit()
+        session.refresh(instance=order)
+
+    return order
+
+
+def append_text_to_order(*, order: Order, text: str) -> Order:
+    with Session(engine) as session:
+        session.add(order)
+        order.text += text
+        session.commit()
+        session.refresh(instance=order)
+
+    return order
