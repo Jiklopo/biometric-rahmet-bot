@@ -61,7 +61,7 @@ async def new_order(msg: types.Message):
 
 
 @dp.message_handler(commands=['finish'])
-def close_order(msg: types.Message):
+async def close_order(msg: types.Message):
     user = get_user(telegram_id=msg.from_user.id)
     reply = 'Ничего не произошло...'
     if not user:
