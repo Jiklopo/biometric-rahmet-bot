@@ -35,7 +35,7 @@ class User(Base):
     )
     state = Column(
         String(10),
-        default=UserStates.CREATED
+        default='CREATED'
     )
     orders = relationship('Order', back_populates='user')
 
@@ -46,7 +46,16 @@ class User(Base):
 class Order(Base):
     __tablename__ = 'orders'
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
+    id = Column(
+        Integer,
+        primary_key=True,
+        autoincrement=True
+    )
+
+    text = Column(
+        String,
+        default=''
+    )
 
     is_finished = Column(Boolean, default=False)
 
