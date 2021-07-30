@@ -94,11 +94,29 @@ class OrderMessage(Base):
 class Product(Base):
     __tablename__ = 'products'
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    name = Column(String, unique=True)
-    price = Column(Float, nullable=True)
-    updated_at = Column(DateTime, onupdate=datetime.now, default=datetime.now)
-    added_by = Column(String, ForeignKey('telegram_users.telegram_id'))
+    id = Column(
+        Integer,
+        primary_key=True,
+        autoincrement=True
+    )
+    name = Column(
+        String,
+        unique=True
+    )
+    price = Column(
+        Float,
+        default=0
+    )
+    updated_at = Column(
+        DateTime,
+        onupdate=datetime.now,
+        default=datetime.now
+    )
+    updated_by = Column(
+        String,
+        ForeignKey('telegram_users.telegram_id')
+
+    )
     orders = relationship(
         'Order',
         secondary=order_product_association,
