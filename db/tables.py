@@ -2,6 +2,8 @@ from sqlalchemy import Column, String, ForeignKey, Table, Integer, Float, DateTi
 from sqlalchemy.orm import registry, relationship
 from datetime import datetime
 
+from db import engine
+
 mapper_registry = registry()
 Base = mapper_registry.generate_base()
 
@@ -34,7 +36,7 @@ class Order(Base):
 
     is_finished = Column(Boolean, default=False)
 
-    user_id = Column(String, ForeignKey('user.id'))
+    user_id = Column(String, ForeignKey('telegram_users.telegram_id'))
     user = relationship(
         'User',
         back_populates='orders'
@@ -65,7 +67,7 @@ class OrderMessage(Base):
 
     chat_id = Column(
         String,
-        ForeignKey('telegram_users.telergam_id')
+        ForeignKey('telegram_users.telegram_id')
     )
 
     order_id = Column(
@@ -99,3 +101,11 @@ class Product(Base):
 
     def __repr__(self):
         return f'Product<{self.id}>(name={self.name} price={self.price}'
+
+
+def create_tables():
+    mapper_registry.metadata.create_all(engine)
+
+
+if __name__ == '__main__':
+    create_tables()
