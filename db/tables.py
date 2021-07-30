@@ -35,7 +35,7 @@ class User(Base):
     )
     state = Column(
         String(10),
-        default='CREATED'
+        default=UserStates.CREATED.value
     )
     orders = relationship('Order', back_populates='user')
 
