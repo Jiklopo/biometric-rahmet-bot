@@ -3,6 +3,7 @@ from sqlalchemy.orm import registry, relationship
 from datetime import datetime
 
 from db import engine
+from db.statuses import UserStatuses
 
 mapper_registry = registry()
 Base = mapper_registry.generate_base()
@@ -19,6 +20,10 @@ class User(Base):
     __tablename__ = 'telegram_users'
 
     telegram_id = Column(String(32), primary_key=True)
+    username = Column(
+        String(32),
+        default=''
+    )
     name = Column(
         String,
         default=''
@@ -28,7 +33,10 @@ class User(Base):
         String(16),
         default=''
     )
-    state = Column(String(10))
+    state = Column(
+        String(10),
+        default=UserStatuses.CREATED
+    )
     orders = relationship('Order', back_populates='user')
 
     def __repr__(self):

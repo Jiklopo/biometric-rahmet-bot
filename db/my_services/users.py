@@ -4,36 +4,30 @@ from db import engine
 from db.tables import User
 
 
-def create_user(*, telegram_id, name='', kaspi='') -> User:
+def create_user(*, telegram_id, username='', name='', kaspi='') -> User:
     with Session(engine) as session:
         user = User(
             telegram_id=telegram_id,
+            username=username,
             name=name,
             kaspi=kaspi,
             state='UNNAMED'
         )
         session.add(user)
         session.commit()
-        user = session.get(User, telegram_id)
+        session.refresh(instance=user)
 
     return user
 
 
-def name_user(*, user: User, name: str) -> User:
+def update_user(*, user: User, username=None, name=None, state=None, kaspi=None) -> User:
     with Session(engine) as session:
-        user.name = name
         session.add(user)
+        user.username = username or user.username
+        user.name = name or user.name
+        user.state = state or user.state
+        user.kaspi = kaspi or user.kaspi
         session.commit()
-        user = session.get(User, user.telegram_id)
-
-    return user
-
-
-def update_user_state(*, user: User, state: str) -> User:
-    with Session(engine) as session:
-        user.state = state
-        session.add(user)
-        session.commit()
-        user = session.get(User, user.telegram_id)
+        session.refresh(instance=user)
 
     return user
