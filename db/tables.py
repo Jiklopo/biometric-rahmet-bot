@@ -19,14 +19,20 @@ class User(Base):
     __tablename__ = 'telegram_users'
 
     telegram_id = Column(String(32), primary_key=True)
-    name = Column(String)
+    name = Column(
+        String,
+        default=''
+    )
     # Maybe phone number or card number
-    kaspi = Column(String(16))
+    kaspi = Column(
+        String(16),
+        default=''
+    )
     state = Column(String(10))
     orders = relationship('Order', back_populates='user')
 
     def __repr__(self):
-        return f'User<{self.telegram_id}>(name={self.name} kaspi={self.kaspi} state={self.state}'
+        return f'User<{self.telegram_id}>(name={self.name} kaspi={self.kaspi} state={self.state})'
 
 
 class Order(Base):
@@ -82,7 +88,7 @@ class OrderMessage(Base):
     message_id = Column(String(64))
 
     def __repr__(self):
-        return f'OrderMessage<{self.id}>(order_id={self.order_id} chat_id={self.chat_id} message_id={self.message_id}'
+        return f'OrderMessage<{self.id}>(order_id={self.order_id} chat_id={self.chat_id} message_id={self.message_id})'
 
 
 class Product(Base):
@@ -100,7 +106,7 @@ class Product(Base):
     )
 
     def __repr__(self):
-        return f'Product<{self.id}>(name={self.name} price={self.price}'
+        return f'Product<{self.id}>(name={self.name} price={self.price})'
 
 
 def create_tables():
