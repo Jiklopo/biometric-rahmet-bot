@@ -24,7 +24,7 @@ class User(Base):
     orders = relationship('Order', back_populates='user')
 
     def __repr__(self):
-        return f'User <{self.telegram_id}> (name={self.name}, kaspi={self.kaspi}, state={self.state}'
+        return f'User<{self.telegram_id}>(name={self.name} kaspi={self.kaspi} state={self.state}'
 
 
 class Order(Base):
@@ -49,6 +49,9 @@ class Order(Base):
         'OrderMessage',
         back_populates='order'
     )
+
+    def __repr__(self):
+        return f'Order<{self.id}>(products={self.products} is_finished={self.is_finished} user_id={self.user_id}'
 
 
 class OrderMessage(Base):
@@ -76,6 +79,9 @@ class OrderMessage(Base):
 
     message_id = Column(String(64))
 
+    def __repr__(self):
+        return f'OrderMessage<{self.id}>(order_id={self.order_id} chat_id={self.chat_id} message_id={self.message_id}'
+
 
 class Product(Base):
     __tablename__ = 'products'
@@ -90,3 +96,6 @@ class Product(Base):
         secondary=order_product_association,
         back_populates='products'
     )
+
+    def __repr__(self):
+        return f'Product<{self.id}>(name={self.name} price={self.price}'
