@@ -3,7 +3,7 @@ from sqlalchemy.orm import registry, relationship
 from datetime import datetime
 
 from db import engine
-from db.statuses import UserStates
+from db.states import UserStates
 
 mapper_registry = registry()
 Base = mapper_registry.generate_base()
