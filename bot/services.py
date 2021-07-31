@@ -2,18 +2,20 @@ from aiogram import Bot, types
 
 from db.my_selectors.users import list_users
 from db.states import UserStates
-from db.tables import User
+from db.tables import User, Order
 
 
 class WrongStateException(Exception):
     pass
 
 
-async def notify_users(*, bot: Bot, author: User, notification_text: str):
-    users = list_users()
-    for user in users:
-        if user.telegram_id != author.telegram_id:
-            await bot.send_message(user.telegram_id, notification_text)
+def update_order_message(*, bot: Bot, order: Order, text: str, inline_markup: types.InlineKeyboardMarkup = None):
+    return bot.edit_message_text(
+        text=text,
+        chat_id=order.chat_id,
+        message_id=int(order.message_id),
+        reply_markup=inline_markup
+    )
 
 
 def check_registration(*, msg: types.Message, user: User):
