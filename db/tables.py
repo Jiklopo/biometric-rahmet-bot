@@ -9,10 +9,17 @@ mapper_registry = registry()
 Base = mapper_registry.generate_base()
 
 order_product_association = Table(
-    'orders_product',
+    'orders_products',
     mapper_registry.metadata,
     Column('order_id', ForeignKey('orders.id'), primary_key=True),
     Column('product_id', ForeignKey('products.id'), primary_key=True)
+)
+
+user_order_association = Table(
+    'users_orders',
+    mapper_registry.metadata,
+    Column('user_id', ForeignKey('telegram_users.telegram_id'), primary_key=True),
+    Column('order_id', ForeignKey('orders.id'), primary_key=True)
 )
 
 
@@ -20,23 +27,11 @@ class User(Base):
     __tablename__ = 'telegram_users'
 
     telegram_id = Column(String(32), primary_key=True)
-    username = Column(
-        String(32),
-        default=''
-    )
-    name = Column(
-        String,
-        default=''
-    )
+    username = Column(String(32), default='')
+    name = Column(String, default='')
     # Maybe phone number or card number
-    kaspi = Column(
-        String(16),
-        default=''
-    )
-    state = Column(
-        String(10),
-        default=UserStates.CREATED.value
-    )
+    kaspi = Column(String(16), default='')
+    state = Column(String(10), default=UserStates.CREATED.value)
     orders = relationship('Order', back_populates='user')
 
     def __repr__(self):
@@ -46,99 +41,34 @@ class User(Base):
 class Order(Base):
     __tablename__ = 'orders'
 
-    id = Column(
-        Integer,
-        primary_key=True,
-        autoincrement=True
-    )
+    id = Column(Integer, primary_key=True, autoincrement=True)
 
-    text = Column(
-        String,
-        default=''
-    )
+    text = Column(String, default='')
 
     is_finished = Column(Boolean, default=False)
+    chat_id = Column(String, default='')
+    message_id = Column(String, default='')
 
     user_id = Column(String, ForeignKey('telegram_users.telegram_id'))
-    user = relationship(
-        'User',
-        back_populates='orders'
-    )
+    user = relationship('User', back_populates='orders')
 
-    products = relationship(
-        'Product',
-        secondary=order_product_association
-    )
+    joined_users = relationship('User', secondary=user_order_association)
 
-    messages = relationship(
-        'OrderMessage',
-        back_populates='order'
-    )
+    products = relationship('Product', secondary=order_product_association)
 
     def __repr__(self):
-        return f'Order<{self.id}>(products={self.products} is_finished={self.is_finished} user_id={self.user_id}'
-
-
-class OrderMessage(Base):
-    __tablename__ = 'order_messages'
-
-    id = Column(
-        Integer,
-        primary_key=True,
-        autoincrement=True
-    )
-
-    chat_id = Column(
-        String,
-        ForeignKey('telegram_users.telegram_id')
-    )
-
-    order_id = Column(
-        Integer,
-        ForeignKey('orders.id')
-    )
-    order = relationship(
-        'Order',
-        back_populates='messages'
-    )
-
-    message_id = Column(String(64))
-
-    def __repr__(self):
-        return f'OrderMessage<{self.id}>(order_id={self.order_id} chat_id={self.chat_id} message_id={self.message_id})'
+        return f'Order<{self.id}>(products={self.products} is_finished={self.is_finished} author_id={self.user_id}'
 
 
 class Product(Base):
     __tablename__ = 'products'
 
-    id = Column(
-        Integer,
-        primary_key=True,
-        autoincrement=True
-    )
-    name = Column(
-        String,
-        unique=True
-    )
-    price = Column(
-        Float,
-        default=0
-    )
-    updated_at = Column(
-        DateTime,
-        onupdate=datetime.now,
-        default=datetime.now
-    )
-    updated_by = Column(
-        String,
-        ForeignKey('telegram_users.telegram_id')
-
-    )
-    orders = relationship(
-        'Order',
-        secondary=order_product_association,
-        back_populates='products'
-    )
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String, unique=True)
+    price = Column(Float, default=0)
+    updated_at = Column(DateTime, onupdate=datetime.now, default=datetime.now)
+    updated_by = Column(String, ForeignKey('telegram_users.telegram_id'))
+    orders = relationship('Order', secondary=order_product_association, back_populates='products')
 
     def __repr__(self):
         return f'Product<{self.id}>(name={self.name} price={self.price})'
