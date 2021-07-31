@@ -7,7 +7,8 @@ from aiogram import Bot, Dispatcher, types
 from db.my_selectors.orders import get_active_user_order
 from db.my_selectors.users import get_user
 
-from bot.services import notify_users
+from bot.services import notify_users, check_registration, check_ordering, check_kaspi
+
 from db.my_services.orders import create_order, append_text_to_order, finish_order
 from db.my_services.users import create_user, update_user
 
@@ -46,34 +47,28 @@ async def help(msg: types.Message):
 async def new_order(msg: types.Message):
     user = get_user(telegram_id=msg.from_user.id)
     reply = 'Ничего не произошло...'
-    if not user:
-        reply = 'Вы не зарегистрированы! Используйте команду /register'
-    elif user.state == UserStates.CREATED.value:
-        reply = 'Вы не указали номер Каспи! Отправьте его сюда.'
-    elif user.state == UserStates.ORDERING.value:
-        reply = 'У вас уже есть активный заказ! Закройте его, используя /finish'
-    elif user.state == UserStates.REGISTERED.value:
+    check_registration(msg=msg, user=user)
+    check_kaspi(msg=msg, user=user)
+    check_ordering(msg=msg, user=user)
+    if user.state == UserStates.REGISTERED.value:
         order = create_order(user_id=user.telegram_id)
         user = update_user(user=user, state=UserStates.ORDERING.value)
         reply = f'Заказ #{order.id} успешно создан. Отправьте мне то, что хотите заказать'
-        # await notify_users(bot=bot, author=user, notification_text=f'@{user.username} создал новый заказ!')
     await msg.reply(reply)
 
 
-@dp.message_handler(commands=['finish'])
+@dp.message_handler(commands=['close'])
 async def close_order(msg: types.Message):
     user = get_user(telegram_id=msg.from_user.id)
     reply = 'Ничего не произошло...'
-    if not user:
-        reply = 'Вы не зарегистрированы! Используйте команду /register'
-    elif user.state == UserStates.CREATED.value:
-        reply = 'Вы не указали номер Каспи! Отправьте его сюда.'
-    elif user.state == UserStates.ORDERING.value:
+    check_registration(msg=msg, user=user)
+    check_kaspi(msg=msg, user=user)
+    if user.state == UserStates.ORDERING.value:
         order = get_active_user_order(user_id=user.telegram_id)
         order = finish_order(order=order)
-        reply = f'Заказ #{order.id} успешно завершен. Не забудьте забрать свои деньги.'
-        await notify_users(bot=bot, author=user, notification_text=f'Заказ #{order.id} успешно завершен. '
-                                                                   f'Не забудьте перевсети деньги @{user.username}')
+        reply = f'Заказ #{order.id} успешно закрыт. Не забудьте забрать свои деньги.'
+        await notify_users(bot=bot, author=user, notification_text=f'@{user.username} закрыл заказ.'
+                                                                   f'Не забудьте перевести деньги.')
     elif user.state == UserStates.REGISTERED.value:
         reply = 'У вас нет активных заказов.'
     await msg.reply(reply)
@@ -83,12 +78,11 @@ async def close_order(msg: types.Message):
 async def process_text(msg: types.Message):
     user = get_user(telegram_id=msg.from_user.id)
     reply = 'Ничего не произошло...'
-    if not user:
-        reply = 'Вы не зарегистрированы! Используйте команду /register'
-    elif user.state == UserStates.CREATED.value:
+    check_registration(msg=msg, user=user)
+    if user.state == UserStates.CREATED.value:
         user = update_user(user=user, kaspi=msg.text, state=UserStates.REGISTERED.value)
         reply = f'Ваш номер каспи {user.kaspi}'
-    elif user.state == UserStates.ORDERING.value:
+    if user.state == UserStates.ORDERING.value:
         order = get_active_user_order(user_id=user.telegram_id)
         order = append_text_to_order(order=order, text=f'\n{msg.text}')
         reply = f'Ваш заказ: {order.text}'
