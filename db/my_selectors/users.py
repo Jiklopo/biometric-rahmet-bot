@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 
 from db import engine
-from db.tables import User
+from db.tables import User, Order
 
 
 def get_user(*, telegram_id) -> User:
@@ -9,6 +9,15 @@ def get_user(*, telegram_id) -> User:
         user = session.get(User, telegram_id)
 
     return user
+
+
+def get_all_users_from_orders(*, order: Order) -> list[User]:
+    with Session(engine) as session:
+        session.add(order)
+        users = [order.user]
+        users += order.joined_users
+
+    return users
 
 
 def list_users() -> list[User]:
