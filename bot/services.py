@@ -1,5 +1,7 @@
 from aiogram import Bot, types
 from aiogram.utils.exceptions import MessageNotModified
+from sqlalchemy.orm import Session
+
 from db.my_selectors.users import get_all_users_from_orders
 from db.states import UserStates
 from db.tables import User, Order
@@ -13,10 +15,14 @@ class WrongChatException(Exception):
     pass
 
 
-async def update_order_message(*, bot: Bot, order: Order, text: str = None,
+async def update_order_message(*,
+                               session: Session,
+                               bot: Bot,
+                               order: Order,
+                               text: str = None,
                                inline_markup: types.InlineKeyboardMarkup = None):
     if text is None:
-        users = get_all_users_from_orders(order=order)
+        users = get_all_users_from_orders(session=session, order=order)
         author = users.pop(0)
         text = f'Инициатор заказа @{author.username}\n'
         if users:
