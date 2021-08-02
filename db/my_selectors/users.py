@@ -4,7 +4,7 @@ from db import engine
 from db.tables import User, Order
 
 
-def get_user(*, telegram_id) -> User:
+def get_user(*, telegram_id: int) -> User:
     with Session(engine) as session:
         user = session.get(User, telegram_id)
 

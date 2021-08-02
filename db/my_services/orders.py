@@ -5,7 +5,7 @@ from db.states import UserStates
 from db.tables import Order, Product, User
 
 
-def create_order(*, user_id, chat_id, message_id) -> Order:
+def create_order(*, user_id: int, chat_id: int, message_id: int) -> Order:
     with Session(engine) as session:
         order = Order(user_id=user_id, chat_id=chat_id, message_id=message_id)
         session.add(order)

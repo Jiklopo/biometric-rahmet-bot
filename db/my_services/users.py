@@ -4,7 +4,7 @@ from db import engine
 from db.tables import User
 
 
-def create_user(*, telegram_id, username=None, name=None, kaspi=None) -> User:
+def create_user(*, telegram_id: int, username=None, name=None, kaspi=None) -> User:
     with Session(engine) as session:
         user = User(
             telegram_id=telegram_id,

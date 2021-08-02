@@ -4,7 +4,7 @@ from db import engine
 from db.tables import Product, Order
 
 
-def create_product(*, name, price=None) -> Product:
+def create_product(*, name: str, price=None) -> Product:
     with Session(engine) as session:
         product = Product(name=name, price=price)
         session.add(product)

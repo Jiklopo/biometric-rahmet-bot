@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, ForeignKey, Table, Integer, Float, DateTime, Boolean
+from sqlalchemy import Column, String, ForeignKey, Table, Integer, BigInteger, Float, DateTime, Boolean
 from sqlalchemy.orm import registry, relationship
 from datetime import datetime
 
@@ -26,7 +26,7 @@ user_order_association = Table(
 class User(Base):
     __tablename__ = 'telegram_users'
 
-    telegram_id = Column(String(32), primary_key=True)
+    telegram_id = Column(BigInteger, primary_key=True)
     username = Column(String(32), default='')
     name = Column(String, default='')
     # Maybe phone number or card number
@@ -49,7 +49,7 @@ class Order(Base):
     chat_id = Column(String, default='')
     message_id = Column(String, default='')
 
-    user_id = Column(String, ForeignKey('telegram_users.telegram_id'))
+    user_id = Column(BigInteger, ForeignKey('telegram_users.telegram_id'))
     user = relationship('User', back_populates='orders')
 
     joined_users = relationship('User', secondary=user_order_association)
@@ -67,7 +67,7 @@ class Product(Base):
     name = Column(String, unique=True)
     price = Column(Float, default=0)
     updated_at = Column(DateTime, onupdate=datetime.now, default=datetime.now)
-    updated_by = Column(String, ForeignKey('telegram_users.telegram_id'))
+    updated_by = Column(BigInteger, ForeignKey('telegram_users.telegram_id'))
     orders = relationship('Order', secondary=order_product_association, back_populates='products')
 
     def __repr__(self):
