@@ -46,8 +46,8 @@ class Order(Base):
     text = Column(String, default='')
 
     is_finished = Column(Boolean, default=False)
-    chat_id = Column(String, default='')
-    message_id = Column(String, default='')
+    chat_id = Column(BigInteger, default='')
+    message_id = Column(BigInteger, default='')
 
     user_id = Column(BigInteger, ForeignKey('telegram_users.telegram_id'))
     user = relationship('User', back_populates='orders')
