@@ -30,12 +30,12 @@ class User(Base):
     username = Column(String(32), default='')
     name = Column(String, default='')
     # Maybe phone number or card number
-    kaspi = Column(String(16), default='')
+    kaspi = Column(String(20), default='')
     state = Column(String(10), default=UserStates.CREATED.value)
     orders = relationship('Order', back_populates='user')
 
     def __repr__(self):
-        return f'User<{self.telegram_id}>(name={self.name} kaspi={self.kaspi} state={self.state})'
+        return f'User<{self.telegram_id}>(username={self.name} kaspi={self.kaspi} state={self.state})'
 
 
 class Order(Base):

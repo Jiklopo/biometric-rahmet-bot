@@ -12,6 +12,7 @@ from db.states import UserStates
 
 from db.my_services.orders import create_order, append_text_to_order, finish_order, add_joined_user
 from db.my_services.users import create_user, update_user
+from db.validators import validate_kaspi
 from bot.services import (
     update_order_message,
     check_registration,
@@ -149,8 +150,12 @@ async def process_text(msg: types.Message):
             return
 
         if user.state == UserStates.CREATED.value:
-            user = update_user(session=session, user=user, kaspi=msg.text, state=UserStates.REGISTERED.value)
-            reply = f'Ваш номер каспи {user.kaspi}'
+            kaspi = msg.text
+            if validate_kaspi(kaspi):
+                user = update_user(session=session, user=user, kaspi=kaspi, state=UserStates.REGISTERED.value)
+                reply = f'Ваш номер каспи {user.kaspi}'
+            else:
+                reply = 'Введите номер телефона в международном формате или номер карточки без пробелов.'
 
         elif user.state in [UserStates.ORDERING.value, UserStates.JOINED.value]:
             await check_group(msg=msg)
@@ -170,7 +175,7 @@ async def process_text(msg: types.Message):
 async def join_order_callback(callback: types.CallbackQuery):
     with Session(engine) as session:
         user = get_user(session=session, telegram_id=callback.from_user.id)
-        if not user:
+        if not user or user.state == UserStates.CREATED.value:
             await callback.answer('Сначала зарегистрируйтесь!')
             return
 
