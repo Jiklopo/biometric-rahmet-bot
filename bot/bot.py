@@ -6,14 +6,23 @@ from aiogram import Bot, Dispatcher, types
 
 from db.my_selectors.orders import get_active_user_order, get_order, get_group_order
 from db.my_selectors.users import get_user
+from db.states import UserStates
 
-from bot.services import update_order_message, check_registration, check_ordering, check_kaspi, check_group, \
-    check_private, get_order_markup
 
 from db.my_services.orders import create_order, append_text_to_order, finish_order, add_joined_user
 from db.my_services.users import create_user, update_user
+from bot.services import (
+    update_order_message,
+    check_registration,
+    check_ordering,
+    check_kaspi,
+    check_group,
+    check_private,
+    get_order_markup,
+    WrongChatException,
+    WrongStateException
+)
 
-from db.states import UserStates
 
 load_dotenv()
 TOKEN = os.getenv('TOKEN')
@@ -24,7 +33,10 @@ dp = Dispatcher(bot)
 
 @dp.message_handler(commands=['start', 'register'])
 async def register(msg: types.Message):
-    await check_private(msg=msg)
+    try:
+        await check_private(msg=msg)
+    except WrongChatException:
+        return
 
     user = get_user(telegram_id=msg.from_user.id)
     if user:
@@ -50,12 +62,19 @@ async def help(msg: types.Message):
 
 @dp.message_handler(commands=['order'])
 async def new_order(msg: types.Message):
-    await check_group(msg=msg)
+    try:
+        await check_group(msg=msg)
+    except WrongChatException:
+        return
 
     user = get_user(telegram_id=msg.from_user.id)
-    await check_registration(msg=msg, user=user)
-    await check_kaspi(msg=msg, user=user)
-    await check_ordering(msg=msg, user=user)
+
+    try:
+        await check_registration(msg=msg, user=user)
+        await check_kaspi(msg=msg, user=user)
+        await check_ordering(msg=msg, user=user)
+    except WrongStateException:
+        return
 
     order = get_group_order(group_id=msg.chat.id)
 
@@ -77,13 +96,19 @@ async def new_order(msg: types.Message):
 
 @dp.message_handler(commands=['close'])
 async def close_order(msg: types.Message):
-    await check_group(msg=msg)
+    try:
+        await check_group(msg=msg)
+    except WrongChatException:
+        return
 
     user = get_user(telegram_id=msg.from_user.id)
     reply = 'Ничего не произошло...'
 
-    await check_registration(msg=msg, user=user)
-    await check_kaspi(msg=msg, user=user)
+    try:
+        await check_registration(msg=msg, user=user)
+        await check_kaspi(msg=msg, user=user)
+    except WrongStateException:
+        return
 
     if user.state == UserStates.ORDERING.value:
         order = get_active_user_order(user_id=user.telegram_id)
@@ -107,7 +132,10 @@ async def process_text(msg: types.Message):
     user = get_user(telegram_id=msg.from_user.id)
     reply = 'Ничего не произошло...'
 
-    await check_registration(msg=msg, user=user)
+    try:
+        await check_registration(msg=msg, user=user)
+    except WrongStateException:
+        return
 
     if user.state == UserStates.CREATED.value:
         user = update_user(user=user, kaspi=msg.text, state=UserStates.REGISTERED.value)
@@ -130,10 +158,15 @@ async def process_text(msg: types.Message):
 @dp.callback_query_handler(lambda c: c.data.startswith('join_order'))
 async def join_order_callback(callback: types.CallbackQuery):
     user = get_user(telegram_id=callback.from_user.id)
-    order_id = callback.data.split('#')[1]
+    if not user:
+        await callback.answer('Сначала зарегистрируйтесь!')
+        return
+
+    order_id = int(callback.data.split('#')[1])
     order = get_order(order_id=order_id)
     order = add_joined_user(order=order, user=user)
     markup = get_order_markup(order=order)
     user = update_user(user=user, state=UserStates.JOINED.value)
+
     await update_order_message(bot=bot, order=order, inline_markup=markup)
     await callback.answer('Вы успешно добавлены.')
