@@ -37,14 +37,16 @@ def delete_user(*, session: Session, user: User):
 
 
 def beautify_kaspi(kaspi: str):
-    new_kaspi = ''
-    if len(kaspi) == 16:
-        for i in range(1, 5):
-            new_kaspi += kaspi[(i - 1) * 4:i * 4] + ' '
-        new_kaspi = new_kaspi.strip()
+    if not kaspi:
+        new_kaspi = ''
+        if len(kaspi) == 16:
+            for i in range(1, 5):
+                new_kaspi += kaspi[(i - 1) * 4:i * 4] + ' '
+            new_kaspi = new_kaspi.strip()
 
-    elif len(kaspi) == 12:
-        ph = phonenumbers.parse(kaspi, None)
-        new_kaspi = phonenumbers.format_number(ph, phonenumbers.PhoneNumberFormat.NATIONAL)
+        elif len(kaspi) == 12:
+            ph = phonenumbers.parse(kaspi, None)
+            new_kaspi = phonenumbers.format_number(ph, phonenumbers.PhoneNumberFormat.NATIONAL)
 
-    return new_kaspi
+        return new_kaspi
+    return kaspi
