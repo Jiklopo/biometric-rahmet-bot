@@ -37,7 +37,7 @@ def delete_user(*, session: Session, user: User):
 
 
 def beautify_kaspi(kaspi: str):
-    if not kaspi:
+    if kaspi:
         new_kaspi = ''
         if len(kaspi) == 16:
             for i in range(1, 5):

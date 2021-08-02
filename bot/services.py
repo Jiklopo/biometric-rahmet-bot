@@ -2,6 +2,7 @@ from aiogram import Bot, types
 from aiogram.utils.exceptions import MessageNotModified
 from sqlalchemy.orm import Session
 
+from db.my_selectors.order_texts import get_order_texts
 from db.my_selectors.users import get_all_users_from_orders
 from db.states import UserStates
 from db.tables import User, Order
@@ -22,15 +23,16 @@ async def update_order_message(*,
                                text: str = None,
                                inline_markup: types.InlineKeyboardMarkup = None):
     if text is None:
+        session.add(order)
+        text = f'Инициатор заказа @{order.user.username}\n'
+        text += f'Кто что заказал:\n'
         users = get_all_users_from_orders(session=session, order=order)
-        author = users.pop(0)
-        text = f'Инициатор заказа @{author.username}\n'
-        if users:
-            text += 'Кто заказывает с ним:\n'
-            for user in users:
-                text += f'@{user.username}\n'
-        text += '\nЧто в заказе:'
-        text += order.text
+        for user in users:
+            text += f'@{user.username}:\n'
+            order_texts = get_order_texts(session=session, user_id=user.telegram_id, order_id=order.id)
+            for txt in order_texts:
+                text += f'   {txt.text.strip()}\n'
+
     try:
         await bot.edit_message_text(
             text=text,
