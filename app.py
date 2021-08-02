@@ -1,9 +1,8 @@
 import os
+
 from dotenv import load_dotenv
 from urllib.parse import urljoin
 from aiogram.utils import executor
-from aiohttp import web
-from aiogram.dispatcher.webhook import get_new_configured_app
 
 from bot.bot import bot, dp
 
@@ -12,15 +11,29 @@ ENV = os.getenv('ENV')
 TOKEN = os.getenv('TOKEN')
 APP_URL = os.getenv('APP_URL', '')
 
-WEBHOOK_URL_PATH = '/webhook/' + TOKEN
-WEBHOOK_URL = urljoin(APP_URL, WEBHOOK_URL_PATH)
+WEBHOOK_PATH = '/webhook/' + TOKEN
+WEBHOOK_URL = urljoin(APP_URL, WEBHOOK_PATH)
+
+
+async def heroku_on_startup(dp):
+    await bot.delete_webhook()
+    await bot.set_webhook(WEBHOOK_URL)
+
+
+async def heroku_on_shutdown(dp):
+    await bot.delete_webhook()
 
 
 def heroku_run():
-    bot.delete_webhook()
-    bot.set_webhook(WEBHOOK_URL)
-    app = get_new_configured_app(dispatcher=dp, path=WEBHOOK_URL_PATH)
-    web.run_app(app, host='0.0.0.0', port=os.getenv('PORT'))
+    executor.start_webhook(
+        dispatcher=dp,
+        webhook_path=WEBHOOK_PATH,
+        on_startup=heroku_on_startup,
+        on_shutdown=heroku_on_shutdown,
+        skip_updates=True,
+        host='0.0.0.0',
+        port=os.getenv('PORT'),
+    )
 
 
 def local_run():
