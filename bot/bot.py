@@ -11,7 +11,8 @@ from db.my_selectors.users import get_user
 from db.states import UserStates
 
 from db.my_services.orders import create_order, append_text_to_order, finish_order, add_joined_user
-from db.my_services.users import create_user, update_user
+from db.my_services.users import create_user, update_user, delete_user
+from db.validators import validate_kaspi
 from bot.services import (
     update_order_message,
     check_registration,
@@ -56,9 +57,30 @@ async def register(msg: types.Message):
     await msg.reply(reply)
 
 
+@dp.message_handler(commands=['unregister'])
+async def unregister(msg: types.Message):
+    try:
+        await check_private(msg=msg)
+    except WrongChatException:
+        return
+
+    with Session(engine) as session:
+        user = get_user(session=session, telegram_id=msg.from_user.id)
+        if not user:
+            reply = 'Вы не зарегистрированы!'
+
+        else:
+            delete_user(session=session, user=user)
+            reply = 'Ваш аккаунт удален.'
+
+    await msg.reply(reply)
+
+
 @dp.message_handler(commands=['help'])
 async def help(msg: types.Message):
-    help_message = 'Haha'
+    help_message = 'Здравствуйте! Чтобы мной пользоваться, /register,' \
+                   'а затем введите свой номер каспи. Добавьте меня в групповой чат. ' \
+                   'Создайте новый /order, закидывайте туда, что вам надо. Не забудьте /close заказ'
     await msg.reply(help_message)
 
 
@@ -96,7 +118,7 @@ async def new_order(msg: types.Message):
             user = update_user(session=session, user=user, state=UserStates.ORDERING.value)
             markup = get_order_markup(order=order)
             text = f'@{user.username} создал новый заказ!'
-            await update_order_message(bot=bot, order=order, text=text, inline_markup=markup)
+            await update_order_message(session=session, bot=bot, order=order, text=text, inline_markup=markup)
             return
 
     await msg.reply('Ничего не произошло...')
@@ -125,7 +147,7 @@ async def close_order(msg: types.Message):
             order = finish_order(session=session, order=order)
             reply = f'Заказ #{order.id} успешно закрыт. ' \
                     f'@{user.username} принимает переводы на {user.kaspi}'
-            await update_order_message(bot=bot, order=order, text=reply)
+            await update_order_message(session=session, bot=bot, order=order, text=reply)
             return
 
         elif user.state == UserStates.JOINED.value:
@@ -149,15 +171,19 @@ async def process_text(msg: types.Message):
             return
 
         if user.state == UserStates.CREATED.value:
-            user = update_user(session=session, user=user, kaspi=msg.text, state=UserStates.REGISTERED.value)
-            reply = f'Ваш номер каспи {user.kaspi}'
+            kaspi = msg.text
+            if validate_kaspi(kaspi):
+                user = update_user(session=session, user=user, kaspi=kaspi, state=UserStates.REGISTERED.value)
+                reply = f'Ваш номер каспи {user.kaspi}'
+            else:
+                reply = 'Введите номер телефона в международном формате или номер карточки без пробелов.'
 
         elif user.state in [UserStates.ORDERING.value, UserStates.JOINED.value]:
             await check_group(msg=msg)
             order = get_group_order(session=session, group_id=msg.chat.id)
             order = append_text_to_order(session=session, order=order, updated_by=user, text=f'\n{msg.text}')
             markup = get_order_markup(order=order)
-            await update_order_message(bot=bot, order=order, inline_markup=markup)
+            await update_order_message(session=session, bot=bot, order=order, inline_markup=markup)
             return
 
         elif user.state == UserStates.REGISTERED.value:
@@ -170,7 +196,7 @@ async def process_text(msg: types.Message):
 async def join_order_callback(callback: types.CallbackQuery):
     with Session(engine) as session:
         user = get_user(session=session, telegram_id=callback.from_user.id)
-        if not user:
+        if not user or user.state == UserStates.CREATED.value:
             await callback.answer('Сначала зарегистрируйтесь!')
             return
 
@@ -180,5 +206,5 @@ async def join_order_callback(callback: types.CallbackQuery):
         markup = get_order_markup(order=order)
         user = update_user(session=session, user=user, state=UserStates.JOINED.value)
 
-    await update_order_message(bot=bot, order=order, inline_markup=markup)
+    await update_order_message(session=session, bot=bot, order=order, inline_markup=markup)
     await callback.answer('Вы успешно добавлены.')
