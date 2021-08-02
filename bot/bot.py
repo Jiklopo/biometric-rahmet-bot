@@ -1,15 +1,14 @@
-import dataclasses
 import os
 from dotenv import load_dotenv
 
 from aiogram.types import ContentType
 from aiogram import Bot, Dispatcher, types
 
-from db.my_selectors.orders import get_active_user_order, get_order
+from db.my_selectors.orders import get_active_user_order, get_order, get_group_order
 from db.my_selectors.users import get_user
 
 from bot.services import update_order_message, check_registration, check_ordering, check_kaspi, check_group, \
-    check_private
+    check_private, get_order_markup
 
 from db.my_services.orders import create_order, append_text_to_order, finish_order, add_joined_user
 from db.my_services.users import create_user, update_user
@@ -54,24 +53,26 @@ async def new_order(msg: types.Message):
     await check_group(msg=msg)
 
     user = get_user(telegram_id=msg.from_user.id)
-    reply = 'Ничего не произошло...'
-    markup = None
-
     await check_registration(msg=msg, user=user)
     await check_kaspi(msg=msg, user=user)
     await check_ordering(msg=msg, user=user)
+
+    order = get_group_order(group_id=msg.chat.id)
+
+    if order:
+        await msg.reply('В этой группе уже есть заказ! Сначала закройте его.')
+        return
 
     if user.state == UserStates.REGISTERED.value:
         bot_msg: types.Message = await bot.send_message(msg.chat.id, f'@{user.username} хочет создать новый заказ!')
         order = create_order(user_id=user.telegram_id, chat_id=bot_msg.chat.id, message_id=bot_msg.message_id)
         user = update_user(user=user, state=UserStates.ORDERING.value)
-        markup = types.InlineKeyboardMarkup()
-        join_button = types.InlineKeyboardButton('Заказать вместе', callback_data=f'join_order#{order.id}')
-        markup.add(join_button)
+        markup = get_order_markup(order=order)
         text = f'@{user.username} создал новый заказ!'
         await update_order_message(bot=bot, order=order, text=text, inline_markup=markup)
+        return
 
-    await msg.reply(reply, reply_markup=markup)
+    await msg.reply('Ничего не произошло...')
 
 
 @dp.message_handler(commands=['close'])
@@ -87,10 +88,13 @@ async def close_order(msg: types.Message):
     if user.state == UserStates.ORDERING.value:
         order = get_active_user_order(user_id=user.telegram_id)
         order = finish_order(order=order)
-        reply = f'Заказ #{order.id} успешно закрыт. Не забудьте забрать свои деньги.'
-        await update_order_message(bot=bot,
-                                   author=user,
-                                   text=f'@{user.username} закрыл заказ. Не забудьте перевести деньги.')
+        reply = f'Заказ #{order.id} успешно закрыт. ' \
+                f'@{user.username} принимает переводы на {user.kaspi}'
+        await update_order_message(bot=bot, order=order, text=reply)
+        return
+
+    elif user.state == UserStates.JOINED.value:
+        reply = 'Закрыть заказ может только инициатор.'
 
     elif user.state == UserStates.REGISTERED.value:
         reply = 'У вас нет активных заказов.'
@@ -109,21 +113,27 @@ async def process_text(msg: types.Message):
         user = update_user(user=user, kaspi=msg.text, state=UserStates.REGISTERED.value)
         reply = f'Ваш номер каспи {user.kaspi}'
 
-    elif user.state == UserStates.ORDERING.value:
-        order = get_active_user_order(user_id=user.telegram_id)
-        order = append_text_to_order(order=order, text=f'\n{msg.text}')
-        reply = f'Ваш заказ: {order.text}'
-        await update_order_message(bot=bot, author=user, text=f'@{user.username} хочет заказать {order.text}')
+    elif user.state in [UserStates.ORDERING.value, UserStates.JOINED.value]:
+        await check_group(msg=msg)
+        order = get_group_order(group_id=msg.chat.id)
+        order = append_text_to_order(order=order, updated_by=user, text=f'\n{msg.text}')
+        markup = get_order_markup(order=order)
+        await update_order_message(bot=bot, order=order, inline_markup=markup)
+        return
 
     elif user.state == UserStates.REGISTERED.value:
         reply = 'У вас нет активных заказов. Создайте новый, используя /order'
 
     await msg.reply(reply)
 
-    #
-    # @dp.callback_query_handlers(func=lambda c: c.data.startswith('join_order'))
-    # async def join_order_callback(callback: types.CallbackQuery):
-    #     user = get_user(telegram_id=callback.from_user.id)
-    #     order_id = callback.data.split('#')[1]
-    #     order = get_order(order_id=order_id)
-    #     order = add_joined_user(order=order, user=user)
+
+@dp.callback_query_handler(lambda c: c.data.startswith('join_order'))
+async def join_order_callback(callback: types.CallbackQuery):
+    user = get_user(telegram_id=callback.from_user.id)
+    order_id = callback.data.split('#')[1]
+    order = get_order(order_id=order_id)
+    order = add_joined_user(order=order, user=user)
+    markup = get_order_markup(order=order)
+    user = update_user(user=user, state=UserStates.JOINED.value)
+    await update_order_message(bot=bot, order=order, inline_markup=markup)
+    await callback.answer('Вы успешно добавлены.')
