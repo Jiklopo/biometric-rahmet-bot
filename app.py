@@ -12,7 +12,7 @@ ENV = os.getenv('ENV')
 TOKEN = os.getenv('TOKEN')
 APP_URL = os.getenv('APP_URL', '')
 
-WEBHOOK_URL_PATH = 'webhook/' + TOKEN
+WEBHOOK_URL_PATH = '/webhook/' + TOKEN
 WEBHOOK_URL = urljoin(APP_URL, WEBHOOK_URL_PATH)
 
 
