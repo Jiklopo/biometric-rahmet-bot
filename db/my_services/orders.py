@@ -1,12 +1,13 @@
 from sqlalchemy.orm import Session
 
 from db import engine
-from db.tables import Order, Product
+from db.states import UserStates
+from db.tables import Order, Product, User
 
 
-def create_order(*, user_id) -> Order:
+def create_order(*, user_id, chat_id, message_id) -> Order:
     with Session(engine) as session:
-        order = Order(user_id=user_id)
+        order = Order(user_id=user_id, chat_id=chat_id, message_id=message_id)
         session.add(order)
         session.commit()
         session.refresh(instance=order)
@@ -29,17 +30,38 @@ def add_order_product(*, order: Order, product: Product) -> Order:
 def finish_order(*, order: Order) -> Order:
     with Session(engine) as session:
         session.add(order)
+
         order.is_finished = True
+        order.user.state = UserStates.REGISTERED.value
+
         session.commit()
         session.refresh(instance=order)
 
     return order
 
 
-def append_text_to_order(*, order: Order, text: str) -> Order:
+def append_text_to_order(*, order: Order, updated_by: User, text: str) -> Order:
     with Session(engine) as session:
         session.add(order)
-        order.text += text
+        session.add(updated_by)
+
+        if updated_by.telegram_id == order.user.telegram_id or updated_by in order.joined_users:
+            order.text += text
+
+        session.commit()
+        session.refresh(instance=order)
+
+    return order
+
+
+def add_joined_user(*, order: Order, user: User) -> Order:
+    with Session(engine) as session:
+        session.add(order)
+        session.add(user)
+
+        if user.telegram_id != order.user_id and user not in order.joined_users:
+            order.joined_users.append(user)
+
         session.commit()
         session.refresh(instance=order)
 
