@@ -15,21 +15,19 @@ WEBHOOK_PATH = '/webhook/' + TOKEN
 WEBHOOK_URL = urljoin(APP_URL, WEBHOOK_PATH)
 
 
-async def heroku_on_startup(dp):
-    await bot.delete_webhook()
-    await bot.set_webhook(WEBHOOK_URL)
-
-
-async def heroku_on_shutdown(dp):
-    await bot.delete_webhook()
-
-
 def heroku_run():
+    async def on_startup(dp):
+        await bot.delete_webhook()
+        await bot.set_webhook(WEBHOOK_URL)
+
+    async def on_shutdown(dp):
+        await bot.delete_webhook()
+
     executor.start_webhook(
         dispatcher=dp,
         webhook_path=WEBHOOK_PATH,
-        on_startup=heroku_on_startup,
-        on_shutdown=heroku_on_shutdown,
+        on_startup=on_startup,
+        on_shutdown=on_shutdown,
         skip_updates=True,
         host='0.0.0.0',
         port=os.getenv('PORT'),
@@ -37,11 +35,13 @@ def heroku_run():
 
 
 def local_run():
-    bot.delete_webhook()
-    print('Starting server...')
+    async def on_startup(dp):
+        bot.delete_webhook()
+        print('Started polling...')
+
     executor.start_polling(
         dispatcher=dp,
-        on_startup=print('Server Started.')
+        on_startup=on_startup
     )
 
 
