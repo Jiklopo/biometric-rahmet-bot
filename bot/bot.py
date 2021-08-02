@@ -11,7 +11,7 @@ from db.my_selectors.users import get_user
 from db.states import UserStates
 
 from db.my_services.orders import create_order, append_text_to_order, finish_order, add_joined_user
-from db.my_services.users import create_user, update_user
+from db.my_services.users import create_user, update_user, delete_user
 from db.validators import validate_kaspi
 from bot.services import (
     update_order_message,
@@ -53,6 +53,25 @@ async def register(msg: types.Message):
             )
             reply = f'Здравствуйте, {user.name}!. ' \
                     f'Отправьте мне свой номер каспи (можно номер карточки), чтобы другие могли отправлять вам деньги.'
+
+    await msg.reply(reply)
+
+
+@dp.message_handler(commands=['unregister'])
+async def unregister(msg: types.Message):
+    try:
+        await check_private(msg=msg)
+    except WrongChatException:
+        return
+
+    with Session(engine) as session:
+        user = get_user(session=session, telegram_id=msg.from_user.id)
+        if not user:
+            reply = 'Вы не зарегистрированы!'
+
+        else:
+            delete_user(session=session, user=user)
+            reply = 'Ваш аккаунт удален.'
 
     await msg.reply(reply)
 

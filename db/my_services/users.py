@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from db.tables import User
 import phonenumbers
 
+
 def create_user(*, session: Session, telegram_id: int, username=None, name=None, kaspi=None) -> User:
     user = User(
         telegram_id=telegram_id,
@@ -29,6 +30,12 @@ def update_user(*, session: Session, user: User, username=None, name=None, state
     return user
 
 
+def delete_user(*, session: Session, user: User):
+    session.add(user)
+    session.delete(user)
+    session.commit()
+
+
 def beautify_kaspi(kaspi: str):
     new_kaspi = ''
     if len(kaspi) == 16:
@@ -41,4 +48,3 @@ def beautify_kaspi(kaspi: str):
         new_kaspi = phonenumbers.format_number(ph, phonenumbers.PhoneNumberFormat.NATIONAL)
 
     return new_kaspi
-
