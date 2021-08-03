@@ -16,6 +16,21 @@ class WrongChatException(Exception):
     pass
 
 
+async def generate_order_text(*, session: Session, order: Order):
+    session.add(order)
+    text = f'Инициатор заказа @{order.user.username}\n'
+    text += f'Кто что заказал:\n'
+    users = get_all_users_from_orders(session=session, order=order)
+    for user in users:
+        text += f'@{user.username}:\n'
+        order_texts = get_order_texts(session=session, user_id=user.telegram_id, order_id=order.id)
+        for txt in order_texts:
+            text += f'   {txt.text.strip()}\n'
+    if order.is_finished:
+        text += f'Заказ #{order.id} закрыт. @{order.user.username} принимает переводы на {order.user.kaspi}.'
+    return text
+
+
 async def update_order_message(*,
                                session: Session,
                                bot: Bot,
@@ -23,15 +38,7 @@ async def update_order_message(*,
                                text: str = None,
                                inline_markup: types.InlineKeyboardMarkup = None):
     if text is None:
-        session.add(order)
-        text = f'Инициатор заказа @{order.user.username}\n'
-        text += f'Кто что заказал:\n'
-        users = get_all_users_from_orders(session=session, order=order)
-        for user in users:
-            text += f'@{user.username}:\n'
-            order_texts = get_order_texts(session=session, user_id=user.telegram_id, order_id=order.id)
-            for txt in order_texts:
-                text += f'   {txt.text.strip()}\n'
+        text = generate_order_text(session=session, order=order)
 
     try:
         await bot.edit_message_text(

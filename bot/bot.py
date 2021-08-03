@@ -145,9 +145,7 @@ async def close_order(msg: types.Message):
 
         if user.state == UserStates.ORDERING.value:
             order = finish_order(session=session, order=order)
-            reply = f'Заказ #{order.id} успешно закрыт. ' \
-                    f'@{user.username} принимает переводы на {user.kaspi}'
-            await update_order_message(session=session, bot=bot, order=order, text=reply)
+            await update_order_message(session=session, bot=bot, order=order)
             return
 
         elif user.state == UserStates.JOINED.value:
