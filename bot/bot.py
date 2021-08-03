@@ -51,10 +51,20 @@ async def register(msg: types.Message):
                 username=msg.from_user.username,
                 name=msg.from_user.full_name
             )
-            reply = f'Здравствуйте, {user.name}!. ' \
+            reply = f'Здравствуйте, {user.name}! ' \
                     f'Отправьте мне свой номер каспи (можно номер карточки), чтобы другие могли отправлять вам деньги.'
 
     await msg.reply(reply)
+
+
+@dp.message_handler(commands=['help'])
+async def help(msg: types.Message):
+    help_message = 'Здравствуйте! Чтобы мной пользоваться, /register, ' \
+                   'а затем введите свой номер каспи. Добавьте меня в групповой чат, ' \
+                   'создайте новый /order. Отвечайте на мои сообщения, чтобы добавить что-то в заказ. ' \
+                   'Если вы не являетесь инициатором, то сначала нужно будет присоединиться к заказу.' \
+                   'Используйте /close, чтобы никто не мог добавлять в заказ.'
+    await msg.reply(help_message)
 
 
 @dp.message_handler(commands=['unregister'])
@@ -74,14 +84,6 @@ async def unregister(msg: types.Message):
             reply = 'Ваш аккаунт удален.'
 
     await msg.reply(reply)
-
-
-@dp.message_handler(commands=['help'])
-async def help(msg: types.Message):
-    help_message = 'Здравствуйте! Чтобы мной пользоваться, /register,' \
-                   'а затем введите свой номер каспи. Добавьте меня в групповой чат. ' \
-                   'Создайте новый /order, закидывайте туда, что вам надо. Не забудьте /close заказ'
-    await msg.reply(help_message)
 
 
 @dp.message_handler(commands=['order'])
@@ -200,9 +202,14 @@ async def join_order_callback(callback: types.CallbackQuery):
 
         order_id = int(callback.data.split('#')[1])
         order = get_order(session=session, order_id=order_id)
+
+        if order.user_id == user.telegram_id:
+            await callback.answer('Вы не можете присоединиться к своему заказу!')
+            return
+
         order = add_joined_user(session=session, order=order, user=user)
         markup = get_order_markup(order=order)
-        user = update_user(session=session, user=user, state=UserStates.JOINED.value)
+        update_user(session=session, user=user, state=UserStates.JOINED.value)
 
     await update_order_message(session=session, bot=bot, order=order, inline_markup=markup)
     await callback.answer('Вы успешно добавлены.')

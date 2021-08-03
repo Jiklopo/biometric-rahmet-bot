@@ -53,7 +53,7 @@ async def update_order_message(*,
 
 def get_order_markup(*, order: Order) -> types.InlineKeyboardMarkup:
     markup = types.InlineKeyboardMarkup()
-    join_button = types.InlineKeyboardButton('Заказать вместе', callback_data=f'join_order#{order.id}')
+    join_button = types.InlineKeyboardButton('Присоединиться к заказу', callback_data=f'join_order#{order.id}')
     markup.add(join_button)
     return markup
 

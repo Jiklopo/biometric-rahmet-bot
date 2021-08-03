@@ -1,6 +1,5 @@
 from sqlalchemy.orm import Session
 
-from db import engine
 from db.states import UserStates
 from db.tables import Order, User, OrderText
 
