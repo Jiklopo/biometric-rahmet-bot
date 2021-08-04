@@ -3,6 +3,7 @@ from dotenv import load_dotenv
 
 from aiogram.types import ContentType
 from aiogram import Bot, Dispatcher, types
+from aiogram.utils.exceptions import BadRequest
 from sqlalchemy.orm import Session
 
 from db import engine
@@ -117,6 +118,12 @@ async def new_order(msg: types.Message):
                 chat_id=bot_msg.chat.id,
                 message_id=bot_msg.message_id
             )
+
+            try:
+                await bot.pin_chat_message(bot_msg.chat.id, bot_msg.message_id, disable_notification=True)
+            except BadRequest:
+                await msg.reply('У меня нет возможности закреплять сообщения :C')
+
             user = update_user(session=session, user=user, state=UserStates.ORDERING.value)
             markup = get_order_markup(order=order)
             text = f'@{user.username} создал новый заказ!'
@@ -148,14 +155,16 @@ async def close_order(msg: types.Message):
         if user.state == UserStates.ORDERING.value:
             order = finish_order(session=session, order=order)
             await update_order_message(session=session, bot=bot, order=order)
-            return
-
+            try:
+                await bot.unpin_chat_message(order.chat_id, order.message_id)
+            except BadRequest:
+                print('BadRequest exceptions')
+            reply = 'Заказ закрыт.'
         elif user.state == UserStates.JOINED.value:
             reply = 'Закрыть заказ может только инициатор.'
 
         elif user.state == UserStates.REGISTERED.value:
             reply = 'У вас нет активных заказов.'
-
     await msg.reply(reply)
 
 
