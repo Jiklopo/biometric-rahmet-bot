@@ -38,7 +38,7 @@ async def update_order_message(*,
                                text: str = None,
                                inline_markup: types.InlineKeyboardMarkup = None):
     if text is None:
-        text = generate_order_text(session=session, order=order)
+        text = await generate_order_text(session=session, order=order)
 
     try:
         await bot.edit_message_text(
