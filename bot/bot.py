@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 
 from aiogram.types import ContentType
 from aiogram import Bot, Dispatcher, types
-from aiogram.utils.exceptions import BadRequest
+from aiogram.utils.exceptions import BadRequest, MessageCantBeDeleted
 from sqlalchemy.orm import Session
 
 from db import engine
@@ -23,7 +23,8 @@ from bot.services import (
     check_private,
     get_order_markup,
     WrongChatException,
-    WrongStateException
+    WrongStateException,
+    delete_messages_to_bot
 )
 
 load_dotenv()
@@ -193,6 +194,11 @@ async def process_text(msg: types.Message):
             order = append_text_to_order(session=session, order=order, updated_by=user, text=f'\n{msg.text}')
             markup = get_order_markup(order=order)
             await update_order_message(session=session, bot=bot, order=order, inline_markup=markup)
+
+            try:
+                await delete_messages_to_bot(bot=bot, group_id=msg.chat.id, msg_id=msg.message_id)
+            except MessageCantBeDeleted:
+                await msg.reply('Я не могу удалять сообщения.')
             return
 
         elif user.state == UserStates.REGISTERED.value:
