@@ -51,6 +51,10 @@ async def update_order_message(*,
         print(f'Message of {order} has not been modified.')
 
 
+async def delete_messages_to_bot(*, bot: Bot, group_id: int, msg_id: int):
+    await bot.delete_message(chat_id=group_id, message_id=msg_id)
+
+
 def get_order_markup(*, order: Order) -> types.InlineKeyboardMarkup:
     markup = types.InlineKeyboardMarkup()
     join_button = types.InlineKeyboardButton('Присоединиться к заказу', callback_data=f'join_order#{order.id}')
