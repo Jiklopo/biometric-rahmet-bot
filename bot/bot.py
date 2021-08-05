@@ -23,7 +23,8 @@ from bot.services import (
     check_private,
     get_order_markup,
     WrongChatException,
-    WrongStateException
+    WrongStateException,
+    delete_messages_to_bot
 )
 
 load_dotenv()
