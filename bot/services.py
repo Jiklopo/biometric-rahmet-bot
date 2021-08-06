@@ -18,6 +18,7 @@ class WrongChatException(Exception):
 
 async def generate_order_text(*, session: Session, order: Order):
     session.add(order)
+    amount = 0
     text = f'Инициатор заказа @{order.user.username}\n'
     text += f'Кто что заказал:\n'
     users = get_all_users_from_orders(session=session, order=order)
@@ -25,9 +26,17 @@ async def generate_order_text(*, session: Session, order: Order):
         text += f'@{user.username}:\n'
         order_texts = get_order_texts(session=session, user_id=user.telegram_id, order_id=order.id)
         for txt in order_texts:
+            try:
+                price_split = txt.text.split(' - ')
+                price = int(price_split[1])
+                if price > 0:
+                    amount += price
+            except:
+                print('wring order type')
             text += f'   {txt.text.strip()}\n'
+        text += f'Общая сумма заказа: {amount}\n'
     if order.is_finished:
-        text += f'Заказ #{order.id} закрыт. @{order.user.username} принимает переводы на {order.user.kaspi}.'
+        text += f'\n Заказ #{order.id} закрыт. @{order.user.username} принимает переводы на {order.user.kaspi}.'
     return text
 
 
@@ -49,6 +58,10 @@ async def update_order_message(*,
         )
     except MessageNotModified:
         print(f'Message of {order} has not been modified.')
+
+
+async def delete_messages_to_bot(*, bot: Bot, group_id: int, msg_id: int):
+    await bot.delete_message(chat_id=group_id, message_id=msg_id)
 
 
 def get_order_markup(*, order: Order) -> types.InlineKeyboardMarkup:

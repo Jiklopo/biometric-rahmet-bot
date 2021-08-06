@@ -95,6 +95,7 @@ class OrderText(Base):
 
 def create_tables():
     mapper_registry.metadata.create_all(engine)
+    # mapper_registry.metadata.drop_all(engine)
 
 
 if __name__ == '__main__':
