@@ -61,11 +61,14 @@ async def register(msg: types.Message):
 
 @dp.message_handler(commands=['help'])
 async def help(msg: types.Message):
-    help_message = 'Здравствуйте! Чтобы мной пользоваться, /register, ' \
+    help_message = 'Здравствуйте! Чтобы мной пользоваться введите /register, ' \
                    'а затем введите свой номер каспи. Добавьте меня в групповой чат, ' \
-                   'создайте новый /order. Отвечайте на мои сообщения, чтобы добавить что-то в заказ. ' \
-                   'Если вы не являетесь инициатором, то сначала нужно будет присоединиться к заказу.' \
-                   'Используйте /close, чтобы никто не мог добавлять в заказ.'
+                   'создайте новый /order. Вводите заказ в формате:\nПродукт - цена \n' \
+                   'Если вы не являетесь инициатором, то сначала нужно будет присоединиться к заказу. ' \
+                   'Используйте /close, чтобы закрыть заказ. '\
+                   'Дайте мне права администратора, что бы я могу закреплять и удалять ненужные сообщения. '\
+                   'Так же без прав администратора вам придется каждый раз отвечать на моё сообщение, ' \
+                   'что бы добавить заказ.'
     await msg.reply(help_message)
 
 
@@ -156,10 +159,12 @@ async def close_order(msg: types.Message):
         if user.state == UserStates.ORDERING.value:
             order = finish_order(session=session, order=order)
             await update_order_message(session=session, bot=bot, order=order)
+
             try:
                 await bot.unpin_chat_message(order.chat_id, order.message_id)
             except BadRequest:
                 print('BadRequest exceptions')
+
             reply = 'Заказ закрыт.'
         elif user.state == UserStates.JOINED.value:
             reply = 'Закрыть заказ может только инициатор.'
@@ -198,12 +203,12 @@ async def process_text(msg: types.Message):
             try:
                 await delete_messages_to_bot(bot=bot, group_id=msg.chat.id, msg_id=msg.message_id)
             except MessageCantBeDeleted:
-                await msg.reply('Я не могу удалять сообщения.')
+                print('MessageCantBeDeleted')
+                await msg.reply('Я не могу удалять сообщения. Используйте /help для подробной информации.')
             return
 
         elif user.state == UserStates.REGISTERED.value:
             reply = 'У вас нет активных заказов. Создайте новый, используя /order'
-
     await msg.reply(reply)
 
 
